@@ -56,3 +56,12 @@ def remove_pectoral_muscle(image, background_thresh=30, segment_count=5):
 
     cleaned = cv2.bitwise_and(img, img, mask=mask)
     return cleaned, smoothed
+
+
+def rm_pec_all(stack, background_thresh = 10, segment_count = 150):
+    output = stack.copy()
+    for i, img in enumerate(stack):
+        rmd, cutline = remove_pectoral_muscle(img, background_thresh, segment_count)
+        output[i] = rmd
+
+    return output
