@@ -2,20 +2,6 @@ import cv2 as cv
 import numpy as np
 from skimage.morphology import erosion, dilation
 
-def multi_ero(im, num, element=np.array([[1,1,1],
-                   [1,1,1],
-                   [1,1,1]])):
-    for i in range(num):
-        im = erosion(im, element)
-    return im
-
-def multi_dil(im, num, element=np.array([[1,1,1],
-                   [1,1,1],
-                   [1,1,1]])):
-    for i in range(num):
-        im = dilation(im, element)
-    return im
-
 def denoise(img):
     # first threshold the image
     ret, threshold = cv.threshold(img, 20, 255, cv.THRESH_BINARY)

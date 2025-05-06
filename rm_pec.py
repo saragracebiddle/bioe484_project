@@ -1,5 +1,5 @@
 import numpy as np
-import cv2
+import cv2 as cv
 
 def remove_pectoral_muscle(image, background_thresh=30, segment_count=5):
     img = image.copy()
@@ -52,10 +52,21 @@ def remove_pectoral_muscle(image, background_thresh=30, segment_count=5):
     )
 
 
-    cv2.fillPoly(mask, [poly], 0)
+    cv.fillPoly(mask, [poly], 0)
 
-    cleaned = cv2.bitwise_and(img, img, mask=mask)
-    return cleaned, smoothed
+    cleaned = cv.bitwise_and(img, img, mask=mask)
+
+    ret, threshold = cv.threshold(cleaned, 20, 255, cv.THRESH_BINARY)
+    kernel = np.ones((5, 5), np.uint8) 
+    eroded = cv.erode(threshold, kernel, iterations = 1)  
+    kernel = np.ones((150, 150), np.uint8) 
+    dilated = cv.dilate(eroded, kernel, iterations = 1)  
+    output = np.zeros(threshold.shape, dtype=np.uint8)
+    mask = cv.bitwise_or(output, dilated)
+
+    tfmask = np.equal(mask, 255)
+    np.copyto(output, img, where = tfmask)
+    return output, smoothed
 
 
 def rm_pec_all(stack, background_thresh = 10, segment_count = 150):

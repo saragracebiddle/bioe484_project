@@ -1,15 +1,41 @@
 import numpy as np
 import cv2
+from find_points import *
 
-def compute_alignment_angle(cp, np_point):
-    delta_y = np_point[1] - cp[1]
-    delta_x = np_point[0] - cp[0]
-    theta = np.arctan2(delta_y, delta_x) * (180 / np.pi)
-    if theta > 90:
-        theta -= 180
-    elif theta < -90:
-        theta += 180
+def compute_alignment_angle(CP, NP):
+    theta = np.arctan((NP[0] - CP[0]) / (NP[1]-CP[1]))
     return theta
+
+def avg_theta(CPS, NPS):
+    thetas = np.zeros((CPS.shape[0],1))
+    for i, img in enumerate(thetas):
+        theta = compute_alignment_angle(CPS[i], NPS[i])
+        thetas[i] = theta
+
+    avg_theta = thetas.mean()
+    
+    return np.rad2deg(avg_theta)
+
+
+def rotate_image(image, angle, image_center):
+  #https://stackoverflow.com/questions/9041681/opencv-python-rotate-image-by-x-degrees-around-specific-point
+  #image_center = tuple(np.array(image.shape[1::-1]) / 2)
+  rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
+  result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
+  return result
+
+def rotate_all(stack):
+    nps = np_all(stack)
+    cps = cp_all(stack)
+
+    theta = avg_theta(cps, nps)
+
+    output = stack.copy()
+    for i, img in enumerate(stack):
+        output[i] = rotate_image(img, theta, cps[i])
+
+    return output
+
 
 def rotate_image_about_cp_square(image, cp, angle_deg):
     h, w = image.shape
