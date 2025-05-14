@@ -1,5 +1,6 @@
 import numpy as np
 import cv2 as cv
+from scipy.signal import convolve2d
 
 def remove_pectoral_muscle(image, background_thresh=30, segment_count=5):
     img = image.copy()
@@ -69,10 +70,65 @@ def remove_pectoral_muscle(image, background_thresh=30, segment_count=5):
     return output, smoothed
 
 
-def rm_pec_all(stack, background_thresh = 10, segment_count = 150):
+def pec_cntrs(img, background_thresh = 30):
+    kernel = np.array([[1/9,1/9,1/9],
+                   [1/9,1/9,1/9],
+                   [1/9,1/9,1/9]])
+    conv = convolve2d(img, kernel, mode = 'same')
+    ret, thresh = cv.threshold(img, 5,255, cv.THRESH_BINARY)
+    cnts, _ = cv.findContours(thresh.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    c = cnts[0]
+    extLeft = tuple(c[c[:,:,0].argmin()][0])
+    extRight = tuple(c[c[:,:,0].argmax()][0])
+    a = int(extRight[0] - 20)
+    b = int(extRight[0])
+    rowmeans = img[:, a:b].mean(axis = 1)
+    rowmaxes = img[:, a:b].max(axis = 1)
+    mcontours = []
+    for L1 in range(img.shape[0] -1):
+        L2 = L1+1
+        rowsmaxL = rowmaxes[[int(L1),int(L2)]].max()
+        rowsmeanL = rowmeans[[int(L1),int(L2)]].mean()
+        localthresh = 64 + ((rowsmeanL * 0.7 + rowsmaxL * 0.3)/2)
+        pts = []
+        i = extRight[0] -1 
+        val = conv[L1, i]
+        if rowsmaxL > background_thresh:
+            while val > localthresh:
+                pts.append(i)
+                i += -1
+                val = conv[L1, i]
+            else:
+                mcontours.append((L1, i))
+            
+    return mcontours
+
+def rm_cntrs(img, mcontours):
+    ys = [x[0] for x in mcontours]
+    xs = [x[1] for x in mcontours]
+
+    mid1 = (np.mean(xs[:len(xs)//2]), np.mean(ys[:len(ys)//2]))
+    mid2 = (np.mean(xs[len(xs)//2:]), np.mean(ys[len(ys)//2:]))
+
+    img_c = img.copy()
+    
+    pts = np.array([[xs[1], ys[1]], mid1, mid2, [xs[-1], ys[-1]],[img.shape[1],img.shape[1]], [img.shape[1],0]],  np.int32)
+    pts = pts.reshape((-1,1,2))
+
+    poly = cv.fillPoly(img_c, [pts],  0)
+
+    return poly
+
+
+
+def rm_pec_all(stack):
     output = stack.copy()
     for i, img in enumerate(stack):
-        rmd, cutline = remove_pectoral_muscle(img, background_thresh, segment_count)
-        output[i] = rmd
+        
+        pts = pec_cntrs(img, background_thresh = np.percentile(img, 99))
+        if len(pts) > 5:
+            output[i] = rm_cntrs(img, pts)
+        else:
+            output[i] = img
 
     return output

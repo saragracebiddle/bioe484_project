@@ -1,4 +1,5 @@
 import numpy as np
+import cv2 as cv
 
 def compute_cp(image):
     rows, cols = image.shape
@@ -15,6 +16,24 @@ def compute_cp(image):
 
     return int(x_c), int(y_c)
 
+def get_cp(img):
+    #https://learnopencv.com/find-center-of-blob-centroid-using-opencv-cpp-python/
+    ret, thresh = cv.threshold(img, 5,255, 0)
+    M = cv.moments(thresh)
+
+    cX = int(M['m10'] / M['m00'])
+    cY = int(M['m01'] / M['m00'])
+
+    return cX, cY
+
+def cp_all(stack):
+    output = np.zeros((stack.shape[0],2))
+    for i, img in enumerate(stack):
+        cp = compute_cp(img)
+        output[i] = cp
+
+    return output
+
 def compute_np_left(image, intensity_thresh=20):
     rows, cols = image.shape
     lower_start = int(rows * 0.85) 
@@ -29,3 +48,24 @@ def compute_np_left(image, intensity_thresh=20):
                 return x, y_max
 
     return 0, int(rows * 0.75)
+
+def get_np(img):
+    # https://blog.finxter.com/top-5-methods-to-find-and-draw-extreme-points-of-an-object-in-images-using-opencv-and-python/
+    #bottom_two_thirds = img[]
+    ret, thresh = cv.threshold(img, 5,255, cv.THRESH_BINARY)
+
+    cnts, _ = cv.findContours(thresh.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    c = cnts[0]
+
+    extLeft = tuple(c[c[:,:,0].argmin()][0])
+
+
+    return extLeft
+
+def np_all(stack):
+    output = np.zeros((stack.shape[0],2))
+    for i, img in enumerate(stack):
+        cp = compute_np_left(img)
+        output[i] = cp
+
+    return output

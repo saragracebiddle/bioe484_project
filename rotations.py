@@ -14,7 +14,7 @@ def avg_theta(CPS, NPS):
 
     avg_theta = thetas.mean()
     
-    return np.rad2deg(avg_theta)
+    return np.rad2deg(avg_theta), np.rad2deg(thetas)
 
 
 def rotate_image(image, angle, image_center):
@@ -28,11 +28,15 @@ def rotate_all(stack):
     nps = np_all(stack)
     cps = cp_all(stack)
 
-    theta = avg_theta(cps, nps)
+    avgtheta, allthetas  = avg_theta(cps, nps)
 
     output = stack.copy()
     for i, img in enumerate(stack):
-        output[i] = rotate_image(img, theta, cps[i])
+        rotate_by = int(avgtheta - allthetas[i])
+
+        if avgtheta > allthetas[i]:
+            rotate_by = -rotate_by
+        output[i] = rotate_image(img, int(rotate_by), cps[i])
 
     return output
 
