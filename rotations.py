@@ -24,22 +24,42 @@ def rotate_image(image, angle, image_center):
   result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
   return result
 
-def rotate_all(stack):
+def rotate_pair(stack):
     nps = np_all(stack)
     cps = cp_all(stack)
 
     avgtheta, allthetas  = avg_theta(cps, nps)
 
+    #print(avgtheta)
     output = stack.copy()
     for i, img in enumerate(stack):
-        rotate_by = int(avgtheta - allthetas[i])
 
-        if avgtheta > allthetas[i]:
-            rotate_by = -rotate_by
+        rotate_by = int(avgtheta - allthetas[i][0])
+        #print(allthetas[i][0])
+        #print(rotate_by)
+        #if avgtheta > allthetas[i]:
+        #    rotate_by = -rotate_by
+        
+        #print(rotate_by)
         output[i] = rotate_image(img, int(rotate_by), cps[i])
 
     return output
 
+
+def rotate_all(stack):
+    rotated = np.empty_like(stack)
+    numpairs = stack.shape[0]//2
+    for i in range(numpairs):
+        pair = np.zeros((2, stack.shape[1], stack.shape[2]))
+        pair[0] = stack[int(2*i)]
+        pair[1] = stack[int((2*i) + 1)]
+
+        r = rotate_pair(pair)
+
+        rotated[int(2*i)] = r[0,:,:]
+        rotated[int(2*i +1)] = r[1,:,:]
+
+    return rotated
 
 def rotate_image_about_cp_square(image, cp, angle_deg):
     h, w = image.shape

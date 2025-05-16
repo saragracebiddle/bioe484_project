@@ -50,22 +50,34 @@ def compute_np_left(image, intensity_thresh=20):
     return 0, int(rows * 0.75)
 
 def get_np(img):
-    # https://blog.finxter.com/top-5-methods-to-find-and-draw-extreme-points-of-an-object-in-images-using-opencv-and-python/
-    #bottom_two_thirds = img[]
-    ret, thresh = cv.threshold(img, 5,255, cv.THRESH_BINARY)
+    h,w = img.shape
+    Y = h//2
+    yline = img[Y,:]
+    startX = np.min(yline.nonzero())
+    endX = np.max(yline.nonzero())
+    X = (endX - startX) //2 + startX
+    xline = img[:,X]
+    startY = np.min(xline.nonzero()) 
+    endY = np.max(xline.nonzero()) 
+    third = (endY - startY) // 3
+    top = int(endY)
+    bottom = int((endY - third))
+    bottomthird = img[bottom:top, :]
+    mins = []
+    for i in range(bottomthird.shape[0]):
+        mins.append(np.min(bottomthird[i,:].nonzero()))
 
-    cnts, _ = cv.findContours(thresh.copy(), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    c = cnts[0]
+    minx = min(mins)
+    minxline = bottomthird[:,minx]
+    maxy = np.max(minxline.nonzero())
+  
 
-    extLeft = tuple(c[c[:,:,0].argmin()][0])
-
-
-    return extLeft
+    return (minx, bottom + maxy)
 
 def np_all(stack):
     output = np.zeros((stack.shape[0],2))
     for i, img in enumerate(stack):
-        cp = compute_np_left(img)
+        cp = get_np(img)
         output[i] = cp
 
     return output
