@@ -1,6 +1,9 @@
 from scipy import ndimage
 import numpy as np
 
+# https://stackoverflow.com/questions/60738217/how-to-calculate-mutual-information-of-2d-images-in-python
+
+
 EPS = np.finfo(float).eps
 
 def mutual_information_2d(x, y, sigma=1, normalized=False):
